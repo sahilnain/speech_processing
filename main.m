@@ -49,7 +49,7 @@ for fileIter = 1:length(featureDir)
     %If we want to start the algorithm, compute all of the alpha and beta's
     %for this utterance, we'll have to perform ~150*20*20 = 60.000
     %multiplications
-    %alpha_u = comp_forward(Composite_HMM,b);
+    [alpha_u, beta_u] = comp_forward_backward(Composite_HMM,b);
 
 
 

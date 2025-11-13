@@ -4,6 +4,8 @@ HMM_digit.tag = tag;
 HMM_digit.numStates = numStates;
 
 A = zeros(numStates);
+pi = zeros(1,numStates);
+pi(1) = 1;
 for i = 1:numStates
     if i < numStates
         A(i,i) = 0.9;  % self-loop
@@ -15,11 +17,11 @@ end
     
 HMM_digit.A = A;
 
-HMM_digit.pi = [1 0 0];
+HMM_digit.pi = pi;
     
     % --- Gaussian emission parameters (mean & covariance) ---
 for s = 1:numStates
-    HMM_digit.emission(s).mu  = ones(1, outputDim);       % random init
+    HMM_digit.emission(s).mu  = randn(1, outputDim);       % random init
     HMM_digit.emission(s).Sigma = ones(1,outputDim);          % identity cov
     HMM_digit.emission(s).mixWeight = 1.0;               % one mixture
 end
