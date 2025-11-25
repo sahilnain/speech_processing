@@ -25,7 +25,7 @@ end
 
 %if we assume we know the transition probabilities a priori, we can easily
 %construct the large A matrix
-A_total = spdiags([0.9*ones(totalStates,1) 0.1*ones(totalStates,1)], [0 1], totalStates, totalStates);
+A_total = spdiags([0.7*ones(totalStates,1) 0.3*ones(totalStates,1)], [0 1], totalStates, totalStates);
 A_total(totalStates,totalStates) = 1;
 %Construct the large pi vector
 pi_total = zeros(1, totalStates);

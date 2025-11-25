@@ -25,10 +25,10 @@ b_log = zeros(T,N);      %We will calculate all b's for all time frames while it
 for i = 1:N
 
 mu = HMM.emission(i).mu;           
-sigma = HMM.emission(i).Sigma; 
+sigma = HMM.emission(i).sigma; 
 
 diff = data - mu; 
-result = 0.5*log(2*pi*sigma) - (diff).^2 ./(2*sigma.^2);
+result = -0.5*log(2*pi*sigma) - (diff).^2 ./ (2*sigma);%0.5*log(2*pi*sigma) - (diff).^2 ./(2*sigma.^2);
 
 %If we assume the coëfficients D are independant, we take the product of all D
 % components of b. This is becomes a sum in the log domain. So sum a row
@@ -42,6 +42,16 @@ end
 alpha_log(1,:) = log(HMM.pi) +b_log(1,:);
 %generate alpha for the last time index
 beta_log(T,:) = 0;
+
+for t = T-1:-1:1
+    % sum_term = log(A) + b_log(t+1,:) + beta_log(t+1,:);
+    sum_term = log(HMM.A) + (b_log(t+1,:) + beta_log(t+1,:));  
+
+    max_val = max(sum_term,[],2);
+    beta_log(t,:) = max_val + log(sum(exp(sum_term - max_val),2));
+end
+
+
 
 %Generate the alpha's for the other t's using recursion
 
@@ -57,17 +67,17 @@ second_term_alpha = max_values_alpha + log(sum(exp(sum_term_alpha - max_values_a
 
 %Now we calculate the beta's
 %For this we now have a log of a sum of an exp of a sum of three terms
-sum_term_beta = b_log(end-t+2,:) + beta_log(end-t+2,:) + log(HMM.A);
-max_values_beta = max(sum_term_beta,[],2);
-second_term_beta = max_values_beta + log(sum(exp(sum_term_beta - max_values_beta),2));
+%sum_term_beta = b_log(end-t+2,:) + beta_log(end-t+2,:) + log(HMM.A);
+%max_values_beta = max(sum_term_beta,[],2);
+%second_term_beta = max_values_beta + log(sum(exp(sum_term_beta - max_values_beta),2));
 
 %We get some Nan values here when the max is -inf, fix this by putting it
 %back to -Inf
 second_term_alpha(isnan(second_term_alpha)) = -Inf;
-second_term_beta(isnan(second_term_beta)) = -Inf;
+%second_term_beta(isnan(second_term_beta)) = -Inf;
 
 alpha_log(t,:) = b_log(t,:) + second_term_alpha';
-beta_log(end-t+1,:) =  second_term_beta';
+%beta_log(end-t+1,:) =  second_term_beta';
 end
 
 %Because we know our emission model only consists of one component, (so
