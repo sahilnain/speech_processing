@@ -28,7 +28,7 @@ HMMs(10) = create_digit_HMM(N,feature_dim,'z'); %Zero
 HMMs(11) = create_digit_HMM(N,feature_dim,'o'); %Oh
 HMMs(12) = create_digit_HMM(N_silence,feature_dim,'s'); %Leading Silence
 HMMs(13) = create_digit_HMM(N_silence,feature_dim,'q'); %Trailing Silence
-HMMs(14) = create_digit_HMM(2,feature_dim,'r'); %(Optional, interdigit silence)
+%HMMs(14) = create_digit_HMM(2,feature_dim,'r'); %(Optional, interdigit silence)
 
 %Create the lookup table
 tags = {HMMs.tag};
@@ -114,7 +114,7 @@ for l = 1:HMMs(13).numStates
 end
 
 for z = 1:5
-% Read the features
+%Train the models
 for fileIter = 1:length(featureDir)
     filename = featureDir(fileIter).name;
     b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
