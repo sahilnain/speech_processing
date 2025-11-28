@@ -66,7 +66,7 @@ end
     [max_prob, best_final_state] = max(V_log(:, T));
     
     % Backtrack to find best path
-    best_path = global_map{best_final_state, T};
+    best_path = global_map{best_final_state, T}';
     %Translate to the digit HMMs using the state map
     digit_path = HMM.stateMap(best_path,2);
 

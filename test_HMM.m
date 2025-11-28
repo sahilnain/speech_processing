@@ -1,5 +1,12 @@
-b = load('HMM_train.mat');
-HMMs = b.HMMs;
+function [WER] = test_HMM(featureDir,HMMs)
+
+%b = load('HMM_train.mat');
+%HMMs = b.HMMs;
+
+%Create the inverse lookup table
+tags = {HMMs.tag};
+indices = num2cell(1:numel(HMMs));  % Make cell array of indices
+lookup_inv = containers.Map(indices,tags);
 
 %Combine all of the HMMs into a super HMM with a large intial state
 %probabilty and large transition probability matrix
@@ -9,7 +16,7 @@ SuperHMM.pi = [];
 totalStates = 0;
 Statevec    = zeros(size(HMMs,2) -1 ,1);
 
-for d = 1:size(HMMs,2)-1
+for d = 1:size(HMMs,2)
 
     SuperHMM.emission = [ SuperHMM.emission ,HMMs(d).emission];
     ns = HMMs(d).numStates;
@@ -47,7 +54,7 @@ trans_prob = SuperHMM.pi;
 %Change the leading silence and trailing silence probs
 trans_prob(Trailing_silence_index) = trans_prob(Leading_silence_index);
 trans_prob(Leading_silence_index) = 0;
-for d = 1:size(HMMs,2)-1
+for d = 1:size(HMMs,2)
     ns = HMMs(d).numStates;
 
     %When we're not in the final state of one of the HMMs, we can only go
@@ -71,30 +78,36 @@ SuperHMM.stateMap = stateMap;
 
 %Now that we have our SUPER HMM, we can start the Viterbi algorithm
 %(HOW MUCH DO WE NEED TO HAVE LESS STATES THAN OBSERVATIONS HERE?)
-featureFile = "FBank_test\test";
-featureDir = dir(fullfile(featureFile,'**/*.*'));
 
-sdir = [featureDir.isdir];
-one = logical(ones(length(featureDir),1));
-removeMask = (sdir' == one);
-featureDir(removeMask) = [];
+num_total = 0;
+denom_total = 0;
 
 for fileIter = 1:length(featureDir)
 
     filename = featureDir(fileIter).name;
     b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
     [state_sequence,digit_sequence] = Viterbi_recognition(SuperHMM,b);
+    %Now we want to convert the digit sequence of length T to an utterance
+    %where the relevant digits only occur once. When a state jumps by more
+    %then one, we know we are measuring a new digit
+    jump_indices = [find(abs(diff(state_sequence)) > 1); length(digit_sequence)];
+    digits =  arrayfun(@(key) lookup_inv(key), digit_sequence(jump_indices), 'UniformOutput', false);
+    
 
 
+    sequence = split(filename,{'a','b'});
+    sequence = sequence{1};
+    sequence_est = join(string(digits), '');
+    sequence_est = strip(strip(sequence_est, 'left', 's'), 'right', 'q');
 
-    disp(fileIter)
+    num_total = num_total + editDistance(sequence,sequence_est);
+    denom_total = denom_total + size(sequence,2);
 
+    %Convert to a metric to test accuracy
+    %disp(fileIter)
+end
 
-
-
-
+WER = num_total/denom_total*100;
 
 
 end
-
-

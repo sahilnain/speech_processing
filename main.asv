@@ -1,14 +1,10 @@
-
-%Test and train HMMs where each HMM represents a digit.
-
-
 % Add npy function to search path
 %addpath("D:\masters_course\Speech_processing\npy-matlab\npy-matlab\")
 %savepath
 
 % Variables
 featureFile_train = "FBank_train\train";
-featureFile_test = "FBank_test\test";
+featureFile_test = "FBank_train\train";
 
 featureDir_train = dir(fullfile(featureFile_train,'**/*.*'));
 sdir = [featureDir_train.isdir];
@@ -26,7 +22,7 @@ featureDir_test(removeMask) = [];
 
 %Initialise the HMM's for the digits, We assume each digit is modelled by an HMM with the
 %same amount of states
-N           = 7; %Number of states
+N           = 5; %Number of states
 N_silence   = 3; %Number of states for silence
 feature_dim = 80;
 
@@ -43,15 +39,9 @@ HMMs(13) = create_digit_HMM(N_silence,feature_dim,'q'); %Trailing Silence
 %HMMs(14) = create_digit_HMM(2,feature_dim,'r'); %(Optional, interdigit silence)
 
 
-HMMs = improve__digit_initialisation(featureDir_train,HMMs,feature_dim);
-epochs = 10;
-WER_vec = zeros(1,10);
+HMMs = improve__digit_initialisation(featureDir_train,HMMs);
 
-for z = 1:epochs
+for z = 1:5
 %Train the models
-HMMs = train_HMMs(featureDir_train,HMMs,feature_dim);
-
-%Test the models, store the accuracy in a vec
-WER_vec(z) = test_HMM(featureDir_test,HMMs);
+HMMs = train_HMMs(featureDir_train,HMMs);
 end
-

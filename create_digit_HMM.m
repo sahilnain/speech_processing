@@ -8,8 +8,8 @@ pi = zeros(1,numStates);
 pi(1) = 1;
 for i = 1:numStates
     if i < numStates
-        A(i,i) = 0.7;  % self-loop
-        A(i,i+1) = 0.3; % next state
+        A(i,i) = 0.9;  % self-loop
+        A(i,i+1) = 0.1; % next state
     else
         A(i,i) = 1.0; % final state self-loop
     end
