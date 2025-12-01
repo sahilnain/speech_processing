@@ -26,13 +26,13 @@ feature_dim = 80;
 Phonemes = {'Z' ,'IY','R','OW','W','AH','N','T',...
     'UW','TH','F','AO','AY','V','S','IH','K','EH',...
     'EY'};
-%{
+
 for i =1:size(Phonemes,2)
     HMMs(i) = create_HMM(N,feature_dim,Phonemes{i});
 end
 HMMs(20) = create_HMM(N_silence,feature_dim,'s'); %Leading Silence
 HMMs(21) = create_HMM(N_silence,feature_dim,'q'); %Trailing Silence
-%}
+
 %Create a lookup table which maps digits to a phoneme sequence
 digits = {'1','2','3','4','5','6','7','8','9','z','o','s','q'};
 digit2phon = {{'W','AH','N'},{'T','UW'},{'TH','R','IY'},...
@@ -45,7 +45,7 @@ phon2HMM_lookup =   containers.Map({HMMs.tag}, num2cell(1:numel(HMMs)));
 
 %Next, we will go over all  utterances of a single digit in order to
 %improve the initialisation of these Phoneme HMM's
-%HMMs = improve_phoneme_initialisation(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+HMMs = improve_phoneme_initialisation(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
 
 %Start training the model for a number of iterations
 epochs = 3;
