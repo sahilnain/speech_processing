@@ -1,30 +1,31 @@
-function [HMMs] = train_HMMs(featureDir,HMMs,feature_dim)
+function [HMMs] = train_phoneme_HMMs(featureDir,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup)
 
-%Create the lookup table
-tags = {HMMs.tag};
-indices = num2cell(1:numel(HMMs));  % Make cell array of indices
-lookup = containers.Map(tags, indices);
 
 for fileIter = 1:length(featureDir)
+    %Loop over the filenames, find the ones where the utterance is a single
+    %digit
+    disp(fileIter)
+
     filename = featureDir(fileIter).name;
     b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
-    
-    %Construct a state sequence by concatenating the different HMM's to
-    %each other
+
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
-    
-    Composite_HMM = create_composite_HMM(HMMs,sequence,lookup,0);
-  
-    %Generate the alpha's and beta's and gamma's
+    %Convert this digit sequence into a phoneme large phoneme sequence
+    phon_sequence = {};
+    for v = sequence
+        phon_sequence = [phon_sequence, digit2phon_lookup(v)];
+    end
+    %Create the composite model for this sequence of phonemes
+    Composite_HMM = create_composite_HMM(HMMs,phon_sequence,phon2HMM_lookup,1);
+
+    %Generate the gamma's
     gamma_u = comp_forward_backward(Composite_HMM,b);
 
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
     mu = (b'*exp(gamma_u));
 
-   
-    %sigma
     for i = 1:size(Composite_HMM.stateMap,1)
         %Underlying HMM state
         digit = Composite_HMM.stateMap(i,2:3);
@@ -39,9 +40,10 @@ for fileIter = 1:length(featureDir)
         HMMs(digit(1)).update(digit(2)).denom = HMMs(digit(1)).update(digit(2)).denom + denom(i);
         HMMs(digit(1)).update(digit(2)).nom_mu = HMMs(digit(1)).update(digit(2)).nom_mu + mu(:,i)';
     end
-
 end
 
+%After accumulating estimates for all the HMMs, apply these estimates and
+%reset the accumulators
 for k = 1:numel(HMMs)
     for l = 1:HMMs(k).numStates
        

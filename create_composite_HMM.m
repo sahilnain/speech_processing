@@ -1,13 +1,25 @@
-function [CompositeHMM] = create_composite_HMM(HMMs,sequence,lookup)
+function [CompositeHMM] = create_composite_HMM(HMMs,sequence,lookup,mode)
 
-sequence = join(['s' , sequence ,'q'],"");
+%Mode 0: digit HMM
+%Mode 1: Phoneme HMM with silence
+%Mode 2: Phomeme HMM without silence
+if mode == 0
+    sequence = join(['s' , sequence ,'q'],"");
+elseif mode == 1
+    sequence = [{'s'}, sequence, {'q'}];
+end
+
 totalStates = 0;
 stateMap = [];
 CompositeHMM.emission = [];
 
 
 for v = sequence
-    d = lookup(v); %Which digit HMM do we need for this char in the utterance
+    if mode == 0
+        d = lookup(v); %Which digit HMM do we need for this char in the utterance
+    else
+        d = lookup(v{1});
+    end
     ns = HMMs(d).numStates;
 
     
@@ -31,15 +43,9 @@ A_total(totalStates,totalStates) = 1;
 pi_total = zeros(1, totalStates);
 pi_total(1) = 1;
 
-
-      
-
-
-
-
 CompositeHMM.A  = A_total;
 CompositeHMM.pi = pi_total;
 CompositeHMM.stateMap = stateMap;
-
+CompositeHMM.numStates = totalStates;
 
 end

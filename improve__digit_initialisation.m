@@ -10,6 +10,7 @@ trailarray = [];
 
 %Determine better initialisation estimates for the HMM's
 for fileIter = 1:length(featureDir)
+    disp(fileIter)
     %Loop over the filenames, find the ones where the utterance is a single
     %digit
     filename = featureDir(fileIter).name;

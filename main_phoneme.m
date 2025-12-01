@@ -1,0 +1,60 @@
+%This script contains the training and testing procedure of the
+%phoneme-based approach
+
+%Configure the data path
+% Variables
+featureFile_train = "FBank_train\train";
+featureFile_test = "FBank_test\test";
+
+featureDir_train = dir(fullfile(featureFile_train,'**/*.*'));
+sdir = [featureDir_train.isdir];
+one = logical(ones(length(featureDir_train),1));
+removeMask = (sdir' == one);
+featureDir_train(removeMask) = [];
+
+featureDir_test = dir(fullfile(featureFile_test,'**/*.*'));
+sdir = [featureDir_test.isdir];
+one = logical(ones(length(featureDir_test),1));
+removeMask = (sdir' == one);
+featureDir_test(removeMask) = [];
+
+%Construct the library of phonemes
+N           = 3; %Number of states for phoneme 
+N_silence   = 3; %Number of states for silence
+feature_dim = 80;
+
+Phonemes = {'Z' ,'IY','R','OW','W','AH','N','T',...
+    'UW','TH','F','AO','AY','V','S','IH','K','EH',...
+    'EY'};
+%{
+for i =1:size(Phonemes,2)
+    HMMs(i) = create_HMM(N,feature_dim,Phonemes{i});
+end
+HMMs(20) = create_HMM(N_silence,feature_dim,'s'); %Leading Silence
+HMMs(21) = create_HMM(N_silence,feature_dim,'q'); %Trailing Silence
+%}
+%Create a lookup table which maps digits to a phoneme sequence
+digits = {'1','2','3','4','5','6','7','8','9','z','o','s','q'};
+digit2phon = {{'W','AH','N'},{'T','UW'},{'TH','R','IY'},...
+    {'F','AO','R'},{'F','AY','V'},{'S','IH','K','S'},{'S','EH','V','AH','N'},...
+    {'EY','T'},{'N','AY','N'},{'Z','IY','R','OW'},{'OW'},{'s'},{'q'}};
+digit2phon_lookup = containers.Map(digits, digit2phon);
+
+%Create a lookup table which maps phonemes to an HMM entry number
+phon2HMM_lookup =   containers.Map({HMMs.tag}, num2cell(1:numel(HMMs)));
+
+%Next, we will go over all  utterances of a single digit in order to
+%improve the initialisation of these Phoneme HMM's
+%HMMs = improve_phoneme_initialisation(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+
+%Start training the model for a number of iterations
+epochs = 3;
+WER_vec = zeros(1,10);
+
+for z = 1:epochs
+%Train the models
+HMMs = train_phoneme_HMMs(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+
+end
+
+WER = test_phoneme_HMM(featureDir_test,HMMs,digit2phon_lookup,phon2HMM_lookup);

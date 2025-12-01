@@ -1,12 +1,15 @@
-function [WER] = test_HMM(featureDir,HMMs)
+function [WER] = test_phoneme_HMM(featureDir,HMMs,digit2phon_lookup,phon2HMM_lookup)
+%From the original mappings, reconstruct the digit HMMs using the phonemes
 
-%b = load('HMM_train.mat');
-%HMMs = b.HMMs;
+keysList = {'1','2','3','4','5','6','7','8','9','z','o','s','q'};
+indices = num2cell(1:13);  % Make cell array of indices
+lookup_inv = containers.Map(indices,keysList);
 
-%Create the inverse lookup table
-tags = {HMMs.tag};
-indices = num2cell(1:numel(HMMs));  % Make cell array of indices
-lookup_inv = containers.Map(indices,tags);
+for i = 1:numel(keysList)
+    k = keysList{i};
+    HMMs_digit(i) = create_composite_HMM(HMMs,digit2phon_lookup(k),phon2HMM_lookup,2);
+end
+
 
 %Combine all of the HMMs into a super HMM with a large intial state
 %probabilty and large transition probability matrix
@@ -14,12 +17,12 @@ stateMap = [];
 SuperHMM.emission = [];
 SuperHMM.pi = [];
 totalStates = 0;
-Statevec    = zeros(size(HMMs,2) -1 ,1);
+Statevec    = zeros(size(HMMs_digit,2) -1 ,1);
 
-for d = 1:size(HMMs,2)
+for d = 1:size(HMMs_digit,2)
 
-    SuperHMM.emission = [ SuperHMM.emission ,HMMs(d).emission];
-    ns = HMMs(d).numStates;
+    SuperHMM.emission = [ SuperHMM.emission ,HMMs_digit(d).emission];
+    ns = HMMs_digit(d).numStates;
     Statevec(d) = ns;
 
     for s = 1:ns
@@ -54,8 +57,8 @@ trans_prob = SuperHMM.pi;
 %Change the leading silence and trailing silence probs
 trans_prob(Trailing_silence_index) = trans_prob(Leading_silence_index);
 trans_prob(Leading_silence_index) = 0;
-for d = 1:size(HMMs,2)
-    ns = HMMs(d).numStates;
+for d = 1:size(HMMs_digit,2)
+    ns = HMMs_digit(d).numStates;
 
     %When we're not in the final state of one of the HMMs, we can only go
     %to the next state within that HMM or remain in the same state
@@ -76,9 +79,6 @@ end
 SuperHMM.A = A_total;
 SuperHMM.stateMap = stateMap;
 
-%Now that we have our SUPER HMM, we can start the Viterbi algorithm
-%(HOW MUCH DO WE NEED TO HAVE LESS STATES THAN OBSERVATIONS HERE?)
-
 num_total = 0;
 denom_total = 0;
 
@@ -93,8 +93,6 @@ for fileIter = 1:length(featureDir)
     jump_indices = [find(abs(diff(state_sequence)) > 1); length(digit_sequence)];
     digits =  arrayfun(@(key) lookup_inv(key), digit_sequence(jump_indices), 'UniformOutput', false);
     
-
-
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
     sequence_est = join(string(digits), '');

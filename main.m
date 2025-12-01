@@ -26,20 +26,20 @@ featureDir_test(removeMask) = [];
 
 %Initialise the HMM's for the digits, We assume each digit is modelled by an HMM with the
 %same amount of states
-N           = 7; %Number of states
+N           = 3; %Number of states
 N_silence   = 3; %Number of states for silence
 feature_dim = 80;
 
 for digit = 1:9
     
-    HMMs(digit) = create_digit_HMM(N,feature_dim,int2str(digit));
+    HMMs(digit) = create_HMM(N,feature_dim,int2str(digit));
 
 end
 
-HMMs(10) = create_digit_HMM(N,feature_dim,'z');         %Zero
-HMMs(11) = create_digit_HMM(N,feature_dim,'o');         %Oh
-HMMs(12) = create_digit_HMM(N_silence,feature_dim,'s'); %Leading Silence
-HMMs(13) = create_digit_HMM(N_silence,feature_dim,'q'); %Trailing Silence
+HMMs(10) = create_HMM(N,feature_dim,'z');         %Zero
+HMMs(11) = create_HMM(N,feature_dim,'o');         %Oh
+HMMs(12) = create_HMM(N_silence,feature_dim,'s'); %Leading Silence
+HMMs(13) = create_HMM(N_silence,feature_dim,'q'); %Trailing Silence
 %HMMs(14) = create_digit_HMM(2,feature_dim,'r'); %(Optional, interdigit silence)
 
 

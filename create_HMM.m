@@ -1,4 +1,4 @@
-function [HMM_digit] = create_digit_HMM(numStates,outputDim,tag)
+function [HMM_digit] = create_HMM(numStates,outputDim,tag)
 %Initialise a HMM for an entire digit
 HMM_digit.tag = tag;
 HMM_digit.numStates = numStates;

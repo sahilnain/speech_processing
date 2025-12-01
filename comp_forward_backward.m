@@ -1,4 +1,4 @@
-function [alpha_log,beta_log,gamma_log] = comp_forward_backward(HMM,data)
+function [gamma_log] = comp_forward_backward(HMM,data)
 
 %Compute the alpha's using the forward procedure
 %These represent the probability of observations up until time t, given we
@@ -92,12 +92,4 @@ denom_gamma = max_values_gamma + log(sum(exp(num_gamma - max_values_gamma),2));
 gamma_log = num_gamma - denom_gamma; 
 %Looking at the data, you wouldn't think they sum to one per t
 %but apparently the values are so small that they actually do sum to one
-
-    
-
-   
-
-
-
-
 end
