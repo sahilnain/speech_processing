@@ -1,73 +1,90 @@
-function [best_path,digit_path] = Viterbi_recognition(HMM,data)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+function [best_path, digit_path] = Viterbi_recognition(HMM, data,gamma)
+% Vectorised Viterbi with word-insertion penalty gamma
+%
+% HMM.gamma = word insertion penalty
+%   gamma > 0 → fewer insertions (more deletions)
+%   gamma < 0 → fewer deletions (more insertions)
 
-%The output will be an TxN matrix (time x total states)
-T = size(data,1); %Number of time frames
-D = size(data,2); %Dimension of one frame
-N = size(HMM.stateMap,1); %Number of states
+T = size(data,1);      % time frames
+N = size(HMM.stateMap,1);
+%gamma = -2;     % new insertion/deletion control
 
-%Initialise the matrices with the probabilities, we will work with log probabilities 
+%% -------------------------------------------------------------
+%  EMISSION LOG-LIKELIHOODS  b_log(t,j)
+%% -------------------------------------------------------------
 
-b_log = zeros(T,N);  %We will calculate all b's for all time frames while iterating over the states
-                     %The j'th column corresponds to the b's of the j'th
-                     %state
+b_log = zeros(T, N);
 
-%Determine the b probabilities
-for i = 1:N
+for j = 1:N
+    mu    = HMM.emission(j).mu;
+    sigma = HMM.emission(j).sigma;
 
-mu = HMM.emission(i).mu;           
-sigma = HMM.emission(i).sigma; 
-
-diff = data - mu; 
-result = -0.5*log(2*pi*sigma) - (diff).^2 ./ (2*sigma);%0.5*log(2*pi*sigma) - (diff).^2 ./(2*sigma.^2);
-
-%If we assume the coëfficients D are independant, we take the product of all D
-% components of b. This is becomes a sum in the log domain. So sum a row
-% together
-b_log(:,i) = sum(result,2);
+    diff   = data - mu; 
+    result = -0.5*log(2*pi*sigma) - (diff).^2 ./ (2*sigma);
+    b_log(:,j) = sum(result,2);
 end
 
-%We will now compute the max probability for each of the states at time t,
-%along with the mapping of from which state each maximum came from. This
-%will allow us to extract the optimal state sequence at t = T
+
+%% -------------------------------------------------------------
+%  PRECOMPUTE STATIC MATRICES FOR VECTORISATION
+%% -------------------------------------------------------------
+
+logA = log(HMM.A);        % N×N
 V_log = zeros(N,T);
-local_map =  zeros(N,T);
+local_map = zeros(N,T);
 global_map = cell(N,T);
 
-%Initialise by calculating the log_prob of V_1(j)
+% Precompute a mask indicating word-boundary transitions (i→j)
+digit_id = HMM.stateMap(:,2);     % size N×1
+boundary_mask = digit_id ~= digit_id.';   % N×N logical
+boundary_cost = gamma * boundary_mask;    % add this to logA
+
+
+%% -------------------------------------------------------------
+%  INITIALISATION
+%% -------------------------------------------------------------
+
 V_log(:,1) = (log(HMM.pi) + b_log(1,:))';
 
-for i = 1:N
-    global_map{i,1} = i;  % Each path starts with its state
+for j = 1:N
+    global_map{j,1} = j;
 end
 
-%AI Generated:
-% Recursion (t = 2 to T)
+
+%% -------------------------------------------------------------
+%  RECURSION (fully vectorised)
+%% -------------------------------------------------------------
+
 for t = 2:T
-    
-        %Select the column of V at time t-1 and sum with all of the columns
-        %of log(A). For one column, add the log_probs of bj(ot) to all rows
-        probs =(V_log(:,t-1) + log(HMM.A))+ b_log(t,:);
-        
-        % Find the best previous state
-        [max_prob, best_prev] = max(probs);
-        V_log(:, t) = max_prob;
-        local_map(:, t) = best_prev;
+
+    % expand previous V_log into N×N (column j receives all prev states)
+    prevScores = V_log(:,t-1);
+
+    % combine scores:
+    % each column j: prevScores(i) + logA(i,j) + boundaryCost(i,j)
+    probs = prevScores + logA + boundary_cost;
+
+    % add emission for time t (broadcast to each column)
+    probs = probs + b_log(t,:);   % adds row vector to each column
+
+    % choose best predecessor for each state j
+    [V_log(:,t), local_map(:,t)] = max(probs, [], 1);
+
+    % update paths
     for j = 1:N
-        % Update path history: append current state to best previous path
-        global_map{j, t} = [global_map{best_prev(j), t-1}, j];
+        prev = local_map(j,t);
+        global_map{j,t} = [global_map{prev,t-1}, j];
     end
-    
-    
 end
 
-    % Termination
-    [max_prob, best_final_state] = max(V_log(:, T));
-    
-    % Backtrack to find best path
-    best_path = global_map{best_final_state, T}';
-    %Translate to the digit HMMs using the state map
-    digit_path = HMM.stateMap(best_path,2);
+
+%% -------------------------------------------------------------
+%  TERMINATION
+%% -------------------------------------------------------------
+
+[~, best_final_state] = max(V_log(:,T));
+best_path = global_map{best_final_state, T}';
+
+digit_path = HMM.stateMap(best_path,2);
 
 end

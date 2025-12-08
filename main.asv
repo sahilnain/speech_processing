@@ -45,16 +45,24 @@ HMMs(14) = create_HMM(1,feature_dim,'r'); %(Optional, interdigit silence)
 
 HMMs = improve__digit_initialisation(featureDir_train,HMMs,feature_dim);
 
-epochs = 15;
+
+
 
 for z = 1:epochs
 %Train the models
 HMMs = train_HMMs(featureDir_train,HMMs,feature_dim);
+
 end
+%Test the models, store the accuracy in a vec
 
-%Test the models and disp WER store the accuracy in a vec
-gamma = -100;
-WER = test_HMM(featureDir_test,HMMs,gamma);
+epochs = 6;
+WER_vec = zeros(1,epochs);
+gamma_vec = [-200 -150 -125 -100 -75 -50];
 
-
+for z = 1:epochs
+%Train the models
+tic
+WER_vec(z) = test_HMM(featureDir_test,HMMs,gamma_vec(z));
+toc
+end
 

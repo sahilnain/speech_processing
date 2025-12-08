@@ -60,24 +60,26 @@ end
 mu_lead = mean(leadarray, 1);        
 sigma_lead = std(leadarray, 0, 1);
 for l = 1:HMMs(12).numStates
-    %Maybe check here if some states have collapsed
-
-
     HMMs(12).emission(l).mu = mu_lead;
-    HMMs(12).emission(l).sigma = sigma_lead;
-    HMMs(12).update(l).nom_mu = zeros(1,feature_dim);
-    HMMs(12).update(l).nom_sigma = zeros(1,feature_dim);
-    HMMs(12).update(l).denom = 0;       
+    HMMs(12).emission(l).sigma = sigma_lead; 
 end
 
 mu_trail = mean(trailarray, 1);        
 sigma_trail = std(trailarray, 0, 1);
 for l = 1:HMMs(13).numStates
-    %Maybe check here if some states have collapsed
     HMMs(13).emission(l).mu = mu_trail;
-    HMMs(13).emission(l).sigma = sigma_trail;
-    HMMs(13).update(l).nom_mu = zeros(1,feature_dim);
-    HMMs(13).update(l).nom_sigma = zeros(1,feature_dim);
-    HMMs(13).update(l).denom = 0;       
+    HMMs(13).emission(l).sigma = sigma_trail;     
 end
+%Set the mu and sigma for inter-symbol silence to the mu and sigma of the
+%leading silence
+for l = 1:HMMs(14).numStates
+    HMMs(14).emission(l).mu = mu_trail;
+    HMMs(14).emission(l).sigma = sigma_trail;
+     
+end
+
+
+
+
+
 end

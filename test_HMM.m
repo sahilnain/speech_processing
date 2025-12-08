@@ -1,4 +1,4 @@
-function [WER] = test_HMM(featureDir,HMMs)
+function [WER] = test_HMM(featureDir,HMMs,gamma)
 
 %b = load('HMM_train.mat');
 %HMMs = b.HMMs;
@@ -12,7 +12,7 @@ lookup_inv = containers.Map(indices,tags);
 %probabilty and large transition probability matrix
 stateMap = [];
 SuperHMM.emission = [];
-SuperHMM.pi = [];
+init_pi = [];
 totalStates = 0;
 Statevec    = zeros(size(HMMs,2) -1 ,1);
 
@@ -29,31 +29,49 @@ for d = 1:size(HMMs,2)
     end 
     
     if(d <= 9) %Digits 1-9
-        SuperHMM.pi = [SuperHMM.pi , 1, zeros(1,ns-1)];
+        init_pi = [init_pi , 1, zeros(1,ns-1)];
     elseif(d <= 11)      %Zeros
-         SuperHMM.pi = [SuperHMM.pi , 0.5, zeros(1,ns-1)];  
+         init_pi = [init_pi , 0.5, zeros(1,ns-1)];  
     elseif(d == 12)      %Leading silence
-         SuperHMM.pi = [SuperHMM.pi , 1, zeros(1,ns-1)]; 
+         init_pi = [init_pi , 1, zeros(1,ns-1)]; 
          Leading_silence_index = totalStates +1;
-    else                %Trailing silence
-        SuperHMM.pi = [SuperHMM.pi , zeros(1,ns)];
-        Trailing_silence_index = totalStates +1;
+    elseif(d == 13)                %Trailing silence
+        init_pi = [init_pi , zeros(1,ns)];
+        Trailing_silence_index = totalStates +1; 
+    else                %Interdigit silence
+        init_pi = [init_pi , zeros(1,ns)];
+        Interdigit_silence_index = totalStates + 1;
     end
-
     totalStates = totalStates + ns;
 end
-pi_sum = sum(SuperHMM.pi);
-SuperHMM.pi = SuperHMM.pi./pi_sum;
+pi_sum = sum(init_pi);
+SuperHMM.pi = init_pi./pi_sum;
 
 A_total = eye(totalStates,totalStates)*0.9;
 %Loop over all of the states of the HMMs again to construct the transition
 %probability matrix A, digits can't connect to leading silence, trailing
-%silence can't connect to digits
+%silence can't connect to digits. Interdigit silence can't connect to
+%leading and trailing silence
 offset = 1;
 trans_prob = SuperHMM.pi;
-%Change the leading silence and trailing silence probs
+%From leading silence, we can go to all digits and to trailing silence
 trans_prob(Trailing_silence_index) = trans_prob(Leading_silence_index);
 trans_prob(Leading_silence_index) = 0;
+%From digits, we can go to all digits, trailing silence and intersymbol
+%silence
+trans_prob_digit = init_pi;
+trans_prob_digit(Interdigit_silence_index) = 1;
+trans_prob_digit(Trailing_silence_index) = 1;
+trans_prob_digit(Leading_silence_index) = 0;
+trans_prob_digit = trans_prob_digit./sum(trans_prob_digit);
+%From inter symbol silence, we can only go to digits
+trans_prob_silence = init_pi;
+trans_prob_silence(Interdigit_silence_index) = 0;
+trans_prob_silence(Trailing_silence_index) = 0;
+trans_prob_silence(Leading_silence_index) = 0;
+trans_prob_silence(Leading_silence_index) = 0;
+trans_prob_silence = trans_prob_silence./sum(trans_prob_silence);
+
 for d = 1:size(HMMs,2)
     ns = HMMs(d).numStates;
 
@@ -65,10 +83,16 @@ for d = 1:size(HMMs,2)
     offset = offset + ns ;
     %In the final state of the HMM, we can go to all other HMMs with equal
     %probability.(exceptions for zero, oh, leading and trailing silence :()
+    %or interdigit silence
     %We can just sum the final state row of A_total with the trans_prob
     %vector scaled, to ensure each row sums to one.
-    if(d ~= 13)
+    if(d < 12)
+        A_total(offset-1,:) = A_total(offset-1,:) + 0.1.*trans_prob_digit;
+    elseif(d == 12)
         A_total(offset-1,:) = A_total(offset-1,:) + 0.1.*trans_prob;
+    elseif(d == 14)
+        %You can only go to digits now
+        A_total(offset-1,:) = A_total(offset-1,:) + 0.1.*trans_prob_silence;
     else
         A_total(offset-1,offset-1) = 1;
     end
@@ -77,16 +101,14 @@ SuperHMM.A = A_total;
 SuperHMM.stateMap = stateMap;
 
 %Now that we have our SUPER HMM, we can start the Viterbi algorithm
-%(HOW MUCH DO WE NEED TO HAVE LESS STATES THAN OBSERVATIONS HERE?)
-
 num_total = 0;
 denom_total = 0;
 
-for fileIter = 1:length(featureDir)
+for fileIter = 1:(length(featureDir)-3000)
 
     filename = featureDir(fileIter).name;
     b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
-    [state_sequence,digit_sequence] = Viterbi_recognition(SuperHMM,b);
+    [state_sequence,digit_sequence] = Viterbi_recognition(SuperHMM,b,gamma);
     %Now we want to convert the digit sequence of length T to an utterance
     %where the relevant digits only occur once. When a state jumps by more
     %then one, we know we are measuring a new digit
@@ -98,13 +120,14 @@ for fileIter = 1:length(featureDir)
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
     sequence_est = join(string(digits), '');
-    sequence_est = strip(strip(sequence_est, 'left', 's'), 'right', 'q');
+    sequence_est = erase(sequence_est, ["q","r","s"]);
+
 
     num_total = num_total + editDistance(sequence,sequence_est);
     denom_total = denom_total + size(sequence,2);
 
     %Convert to a metric to test accuracy
-    %disp(fileIter)
+    disp(fileIter)
 end
 
 WER = num_total/denom_total*100;

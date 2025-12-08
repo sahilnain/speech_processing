@@ -70,6 +70,7 @@ for d = 1:size(HMMs_digit,2)
     %probability.(exceptions for zero, oh, leading and trailing silence :()
     %We can just sum the final state row of A_total with the trans_prob
     %vector scaled, to ensure each row sums to one.
+    
     if(d ~= 13)
         A_total(offset-1,:) = A_total(offset-1,:) + 0.1.*trans_prob;
     else

@@ -8,7 +8,7 @@ lookup = containers.Map(tags, indices);
 for fileIter = 1:length(featureDir)
     filename = featureDir(fileIter).name;
     b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
-    
+    disp(fileIter)
     %Construct a state sequence by concatenating the different HMM's to
     %each other
     sequence = split(filename,{'a','b'});
