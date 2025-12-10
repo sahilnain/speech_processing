@@ -13,9 +13,13 @@ for fileIter = 1:length(featureDir)
     sequence = sequence{1};
     %Convert this digit sequence into a phoneme large phoneme sequence
     phon_sequence = {};
-    for v = sequence
-        phon_sequence = [phon_sequence, digit2phon_lookup(v)];
+    for v = sequence(1:end-1)
+        phon_sequence = [phon_sequence ,digit2phon_lookup(v), {'r'}];
     end
+    phon_sequence = [phon_sequence,digit2phon_lookup(sequence(end))];
+
+
+    
     %Create the composite model for this sequence of phonemes
     Composite_HMM = create_composite_HMM(HMMs,phon_sequence,phon2HMM_lookup,1);
 

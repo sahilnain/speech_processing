@@ -5,8 +5,10 @@ tags = {HMMs.tag};
 indices = num2cell(1:numel(HMMs));  % Make cell array of indices
 lookup = containers.Map(tags, indices);
 
-leadarray = [];
-trailarray = [];
+%Arrays for modelling the Silence estimates
+entries_per_file = 2;
+leadarray  = zeros(entries_per_file*length(featureDir),feature_dim);
+trailarray = zeros(entries_per_file*length(featureDir),feature_dim);
 
 %Determine better initialisation estimates for the HMM's
 for fileIter = 1:length(featureDir)
@@ -37,19 +39,16 @@ for fileIter = 1:length(featureDir)
     end
     
     %Determine better initialisation estimates for silence
-    leadarray = [leadarray ; b(1:2,:)]; %Accumulate leading silence
-    trailarray = [trailarray ; b(end-1:end,:)]; %Accumulate trailing silence
+    leadarray(2*(fileIter-1) + 1:2*fileIter,:)  = b(1:2,:); %Accumulate leading silence
+    trailarray(2*(fileIter-1) + 1:2*fileIter,:) = b(end-1:end,:); %Accumulate trailing silence
 end
 
 %After accumulating the estimates, apply these to the HMMs for
 %initialisation
 for k = 1:11 %1 to oh
     for l = 1:HMMs(k).numStates
-        %Maybe check here if some states have collapsed
-
-
-        HMMs(k).emission(l).mu = HMMs(k).update(l).nom_mu ./ HMMs(k).update(l).denom;
         
+        HMMs(k).emission(l).mu = HMMs(k).update(l).nom_mu ./ HMMs(k).update(l).denom;
         HMMs(k).emission(l).sigma = sqrt(HMMs(k).update(l).nom_sigma ./ (HMMs(k).update(l).denom - 1));
         HMMs(k).update(l).nom_mu = zeros(1,feature_dim);
         HMMs(k).update(l).nom_sigma = zeros(1,feature_dim);

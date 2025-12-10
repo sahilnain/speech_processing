@@ -7,7 +7,6 @@ function [best_path, digit_path] = Viterbi_recognition(HMM, data,gamma)
 
 T = size(data,1);      % time frames
 N = size(HMM.stateMap,1);
-%gamma = -2;     % new insertion/deletion control
 
 %% -------------------------------------------------------------
 %  EMISSION LOG-LIKELIHOODS  b_log(t,j)
@@ -52,7 +51,7 @@ end
 
 
 %% -------------------------------------------------------------
-%  RECURSION (fully vectorised)
+%  RECURSION
 %% -------------------------------------------------------------
 
 for t = 2:T

@@ -49,22 +49,23 @@ end
 %digit HMM, we can only transition to the next state of that digit HMM. In
 %the last state of a digit HMM we can transition either to inter-silence or
 %to the next digit in our training sequence
-
+if(mode ~=2)
 A_total = eye(totalStates,totalStates)*0.9;
 offset = 1;
-d_silence_lead = size(HMMs,2) - 2;
-d_silence_trail = size(HMMs,2) - 1;
+
 d_silence_inter = size(HMMs,2);
 
 
-numStates_silence = HMMs(d_silence_trail).numStates;
+
 numStates_inter_silence = HMMs(d_silence_inter).numStates;
 
-for v = sequence
+for v = 1:length(sequence)-1
     if mode == 0
-        d = lookup(v); %Which digit HMM do we need for this char in the utterance
+        d = lookup(sequence(v)); %Which digit HMM do we need for this char in the utterance
+        d_next = lookup(sequence(v+1));
     else
-        d = lookup(v{1});
+        d = lookup(sequence{v});
+        d_next = lookup(sequence{v+1});
     end
     ns = HMMs(d).numStates;
 
@@ -72,7 +73,6 @@ for v = sequence
     %to the next state within that HMM or remain in the same state
     indices = sub2ind(size(A_total), offset:offset + ns -2, offset+1:offset + ns - 1);
     A_total(indices) = 0.1;
-    %A_total(end,offset) = 0.1/length(sequence);
 
     offset = offset + ns ;
     %In the final state of the HMM, go to the next state if we are in
@@ -80,50 +80,18 @@ for v = sequence
     %digit which is not the last. Go to the next digit if we are in
     %interdigit silence. Go to trailing silence if we are in the last
     %digit.
-
-
-    if((d == d_silence_lead) || (d == d_silence_inter))
-        %If we are in leading silence, we can only go to the first digit
-        %If in intersilence, we can only go to the next digit
-        A_total(offset-1,offset) = 0.1;
-
-    elseif(d == d_silence_trail)
-        %If we are in trailing silence, we can only stay there
-        A_total(totalStates,totalStates) = 1;
-
-    %elseif(d == d_silence_inter)
-        %We can't go from inter_silence to trailing silence, only to digits
-        %following the first digit
-     %   A_total(offset-1,offset) = 0;
-     %   if(length(sequence) == 4)
-     %       A_total(offset-1,offset-1) = 1;
-     %   end
-
-    elseif(offset == totalStates - numStates_silence + 1)
-        %final digit of the sequence
-        %totalStates-numStates_silence+1
-        A_total(offset-1,offset) = 0.1;
-        %A_total(end- numStates_silence,offset-ns) = 0.1/(length(sequence) - 4);
-        %if(length(sequence) == 4)
-         %   A_total(end- numStates_silence,offset-ns) = 0;
-       % end
-    else
+    if(d_next == d_silence_inter)
         A_total(offset-1,offset) = 0.1/2;
         A_total(offset-1,offset + numStates_inter_silence)    = 0.1/2;
-
-
-    %elseif(offset -ns - 1 ~= numStates_silence)
-        %Any digit which isn't the first or the last digit of the sequence
-     %   A_total(offset-1,offset) = 0.1/2;
-      %  A_total(offset-1,end- numStates_silence)    = 0.1/2;
-      %  A_total(end- numStates_silence,offset-ns) = 0.1/(length(sequence) - 4);
-    %else
-      %  A_total(offset-1,offset) = 0.1/2;
-      %  A_total(offset-1,end- numStates_silence)    = 0.1/2;
-    end
-
-    
+    else
+        A_total(offset-1,offset) = 0.1;
+    end  
 end
+ns = HMMs(d_next).numStates;
+indices = sub2ind(size(A_total), offset:offset + ns -2, offset+1:offset + ns - 1);
+A_total(indices) = 0.1;
+A_total(end,end) = 1;
+
 
 %Construct the pi vector, we know we will start in leading silence 
 pi_total = zeros(1, totalStates);
@@ -131,6 +99,8 @@ pi_total(1) = 1;
 
 CompositeHMM.A  = A_total;
 CompositeHMM.pi = pi_total;
+end
+
 CompositeHMM.stateMap = stateMap;
 CompositeHMM.numStates = totalStates;
 

@@ -1,8 +1,5 @@
 function [WER] = test_HMM(featureDir,HMMs,gamma)
 
-%b = load('HMM_train.mat');
-%HMMs = b.HMMs;
-
 %Create the inverse lookup table
 tags = {HMMs.tag};
 indices = num2cell(1:numel(HMMs));  % Make cell array of indices
@@ -47,12 +44,10 @@ end
 pi_sum = sum(init_pi);
 SuperHMM.pi = init_pi./pi_sum;
 
-A_total = eye(totalStates,totalStates)*0.9;
 %Loop over all of the states of the HMMs again to construct the transition
 %probability matrix A, digits can't connect to leading silence, trailing
 %silence can't connect to digits. Interdigit silence can't connect to
 %leading and trailing silence
-offset = 1;
 trans_prob = SuperHMM.pi;
 %From leading silence, we can go to all digits and to trailing silence
 trans_prob(Trailing_silence_index) = trans_prob(Leading_silence_index);
@@ -72,6 +67,8 @@ trans_prob_silence(Leading_silence_index) = 0;
 trans_prob_silence(Leading_silence_index) = 0;
 trans_prob_silence = trans_prob_silence./sum(trans_prob_silence);
 
+A_total = eye(totalStates,totalStates)*0.9;
+offset = 1;
 for d = 1:size(HMMs,2)
     ns = HMMs(d).numStates;
 

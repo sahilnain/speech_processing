@@ -4,11 +4,8 @@ function [HMMs] = improve_phoneme_initialisation(featureDir,HMMs,feature_dim,dig
 
 %Arrays for modelling the Silence estimates
 entries_per_file = 2;
-
 leadarray  = zeros(entries_per_file*length(featureDir),feature_dim);
 trailarray = zeros(entries_per_file*length(featureDir),feature_dim);
-
-
 
 for fileIter = 1:length(featureDir)
     %Loop over the filenames, find the ones where the utterance is a single
@@ -51,11 +48,8 @@ end
 %initialisation
 for k = 1:19   %'Z' to 'EY'
     for l = 1:HMMs(k).numStates
-        %Maybe check here if some states have collapsed
-
-
-        HMMs(k).emission(l).mu = HMMs(k).update(l).nom_mu ./ HMMs(k).update(l).denom;
         
+        HMMs(k).emission(l).mu = HMMs(k).update(l).nom_mu ./ HMMs(k).update(l).denom;
         HMMs(k).emission(l).sigma = sqrt(HMMs(k).update(l).nom_sigma ./ (HMMs(k).update(l).denom - 1));
         HMMs(k).update(l).nom_mu = zeros(1,feature_dim);
         HMMs(k).update(l).nom_sigma = zeros(1,feature_dim);
@@ -76,6 +70,14 @@ for l = 1:HMMs(21).numStates
     HMMs(21).emission(l).mu = mu_trail;
     HMMs(21).emission(l).sigma = sigma_trail;     
 end
+
+%Set the mu and sigma for inter-symbol silence to the mu and sigma of the
+%leading silence
+for l = 1:HMMs(22).numStates
+    HMMs(22).emission(l).mu = mu_trail;
+    HMMs(22).emission(l).sigma = sigma_trail;     
+end
+
 end
 
 
