@@ -18,6 +18,7 @@ for fileIter = 1:length(featureDir)
   
     %Generate the alpha's and beta's and gamma's
     gamma_u = comp_forward_backward(Composite_HMM,b);
+
     
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
