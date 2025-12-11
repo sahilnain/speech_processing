@@ -72,7 +72,7 @@ end
 
 %Test the models and disp WER store the accuracy in a vec
 gamma = -100;
-WER = test_HMM(featureDir_test,HMMs,gamma);
+WER = test_HMM(data_test,HMMs,gamma);
 
 
 
