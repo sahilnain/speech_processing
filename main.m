@@ -62,12 +62,13 @@ HMMs(14) = create_HMM(1,feature_dim,'r'); %(Optional, interdigit silence)
 
 HMMs = improve__digit_initialisation(data_train,HMMs,feature_dim);
 
-epochs = 15;
+epochs = 1;
 
 for z = 1:epochs
 %Train the models
+tic
 HMMs = train_HMMs(data_train,HMMs,feature_dim);
-
+toc
 end
 
 %Test the models and disp WER store the accuracy in a vec
