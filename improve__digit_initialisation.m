@@ -16,7 +16,7 @@ for fileIter = 1:length(featureDir)
     %Loop over the filenames, find the ones where the utterance is a single
     %digit
     filename = featureDir(fileIter).name;
-    b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
+    b = featureDir(fileIter).data;
 
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};

@@ -7,7 +7,7 @@ lookup = containers.Map(tags, indices);
 
 for fileIter = 1:length(featureDir)
     filename = featureDir(fileIter).name;
-    b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
+    b = featureDir(fileIter).data;
     disp(fileIter)
     %Construct a state sequence by concatenating the different HMM's to
     %each other
@@ -17,13 +17,15 @@ for fileIter = 1:length(featureDir)
     Composite_HMM = create_composite_HMM(HMMs,sequence,lookup,0);
   
     %Generate the alpha's and beta's and gamma's
+    tic
     gamma_u = comp_forward_backward(Composite_HMM,b);
-
+    toc
+    
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
     mu = (b'*exp(gamma_u));
 
-   
+    tic
     %sigma
     for i = 1:size(Composite_HMM.stateMap,1)
         %Underlying HMM state
@@ -39,6 +41,7 @@ for fileIter = 1:length(featureDir)
         HMMs(digit(1)).update(digit(2)).denom = HMMs(digit(1)).update(digit(2)).denom + denom(i);
         HMMs(digit(1)).update(digit(2)).nom_mu = HMMs(digit(1)).update(digit(2)).nom_mu + mu(:,i)';
     end
+    toc
 
 end
 

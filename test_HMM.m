@@ -101,10 +101,10 @@ SuperHMM.stateMap = stateMap;
 num_total = 0;
 denom_total = 0;
 
-for fileIter = 1:(length(featureDir)-3000)
+for fileIter = 1:length(featureDir)
 
     filename = featureDir(fileIter).name;
-    b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
+    b = featureDir(fileIter).data;
     [state_sequence,digit_sequence] = Viterbi_recognition(SuperHMM,b,gamma);
     %Now we want to convert the digit sequence of length T to an utterance
     %where the relevant digits only occur once. When a state jumps by more

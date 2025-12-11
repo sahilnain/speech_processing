@@ -1,5 +1,7 @@
 function [CompositeHMM] = create_composite_HMM(HMMs,sequence,lookup,mode)
 
+N_HMMs = length(HMMs);
+
 %Mode 0: digit HMM
 %Mode 1: Phoneme HMM with silence
 %Mode 2: Phomeme HMM without silence
@@ -53,7 +55,11 @@ if(mode ~=2)
 A_total = eye(totalStates,totalStates)*0.9;
 offset = 1;
 
-d_silence_inter = size(HMMs,2);
+if(N_HMMs == 23)
+    d_silence_inter = N_HMMs -1;
+else
+   d_silence_inter = N_HMMs; 
+end
 
 
 

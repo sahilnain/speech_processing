@@ -5,7 +5,20 @@ clear;
 % Variables
 featureFile_train = "FBank_train\train";
 featureFile_test = "FBank_test\test";
+N           = 3; %Number of states for phoneme 
+N_silence   = 3; %Number of states for silence
+feature_dim = 80;
 
+Phonemes = {'Z' ,'IY','R','OW','W','AH','N','T',...
+    'UW','TH','F','AO','AY','V','S','IH','K','EH',...
+    'EY'};
+
+digits = {'1','2','3','4','5','6','7','8','9','z','o','s','q','r'};
+
+%Configurable params
+oh_indep  = false;
+
+%Get the directories to the training and testing data
 featureDir_train = dir(fullfile(featureFile_train,'**/*.*'));
 sdir = [featureDir_train.isdir];
 one = logical(ones(length(featureDir_train),1));
@@ -18,15 +31,29 @@ one = logical(ones(length(featureDir_test),1));
 removeMask = (sdir' == one);
 featureDir_test(removeMask) = [];
 
-%Construct the library of phonemes
-N           = 3; %Number of states for phoneme 
-N_silence   = 3; %Number of states for silence
-feature_dim = 80;
+%Create data objects containing all of the feature data
+data_train = struct('name', {}, 'data', {});
+for i = 1:length(featureDir_train)
+    filename = featureDir_train(i).name;
+    X = readNPY(append(featureDir_train(i).folder,'/',featureDir_train(i).name));
 
-Phonemes = {'Z' ,'IY','R','OW','W','AH','N','T',...
-    'UW','TH','F','AO','AY','V','S','IH','K','EH',...
-    'EY'};
+    data_train(i).name = filename;
+    data_train(i).data    = X;
 
+end
+data_test = struct('name', {}, 'X', {});
+for i = 1:length(featureDir_test)
+    filename = featureDir_test(i).name;
+    X = readNPY(append(featureDir_test(i).folder,'/',featureDir_test(i).name));
+
+    data_test(i).name = filename;
+    data_test(i).data   = X;
+
+end
+
+
+%Create the phoneme HMMs. If we want an independant model for oh, we create
+%an extra HMM
 for i =1:size(Phonemes,2)
     HMMs(i) = create_HMM(N,feature_dim,Phonemes{i});
 end
@@ -34,12 +61,20 @@ HMMs(20) = create_HMM(N_silence,feature_dim,'s'); %Leading Silence
 HMMs(21) = create_HMM(N_silence,feature_dim,'q'); %Trailing Silence
 HMMs(22) = create_HMM(1,feature_dim,'r'); %Trailing Silence
 
+if(oh_indep == true)
+HMMs(23) = create_HMM(7,feature_dim,'o'); %Independant model for oh
+digit2phon = {{'W','AH','N'},{'T','UW'},{'TH','R','IY'},...
+    {'F','AO','R'},{'F','AY','V'},{'S','IH','K','S'},{'S','EH','V','AH','N'},...
+    {'EY','T'},{'N','AY','N'},{'Z','IY','R','OW'},{'o'},{'s'},{'q'},{'r'}};
 
-%Create a lookup table which maps digits to a phoneme sequence
-digits = {'1','2','3','4','5','6','7','8','9','z','o','s','q','r'};
+else
+%Construct a mapping from phonemes to digits
 digit2phon = {{'W','AH','N'},{'T','UW'},{'TH','R','IY'},...
     {'F','AO','R'},{'F','AY','V'},{'S','IH','K','S'},{'S','EH','V','AH','N'},...
     {'EY','T'},{'N','AY','N'},{'Z','IY','R','OW'},{'OW'},{'s'},{'q'},{'r'}};
+end
+
+%Create a lookup table which maps digits to a phoneme sequence
 digit2phon_lookup = containers.Map(digits, digit2phon);
 
 %Create a lookup table which maps phonemes to an HMM entry number
@@ -48,20 +83,24 @@ phon2HMM_lookup =   containers.Map({HMMs.tag}, num2cell(1:numel(HMMs)));
 %Next, we will go over all  utterances of a single digit in order to
 %improve the initialisation of these Phoneme HMM's
 
-HMMs = improve_phoneme_initialisation(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+HMMs = improve_phoneme_initialisation(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
 
 %Start training the model for a number of iterations
-epochs = 20;
-WER_vec = zeros(1,10);
+epochs = 15;
+WER_vec = zeros(1,15);
+gamma = -75;
 
 for z = 1:epochs
 %Train the models
-HMMs = train_phoneme_HMMs(featureDir_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+HMMs = train_phoneme_HMMs(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+HMMs = train_phoneme_HMMs(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+WER_vec(z) = test_phoneme_HMM(data_test,HMMs,digit2phon_lookup,phon2HMM_lookup,0);
 end
+save('WER_3PS_3SS_1IS_zero','WER_vec')
 
-gamma = -75;
 
-WER = test_phoneme_HMM(featureDir_test,HMMs,digit2phon_lookup,phon2HMM_lookup,gamma);
+
+
 
 
 

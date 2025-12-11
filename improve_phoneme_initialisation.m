@@ -13,7 +13,7 @@ for fileIter = 1:length(featureDir)
     disp(fileIter)
 
     filename = featureDir(fileIter).name;
-    b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
+    b = featureDir(fileIter).data;
 
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
@@ -77,6 +77,25 @@ for l = 1:HMMs(22).numStates
     HMMs(22).emission(l).mu = mu_trail;
     HMMs(22).emission(l).sigma = sigma_trail;     
 end
+
+if(length(HMMs) == 23)
+    for l = 1:HMMs(23).numStates
+        HMMs(23).emission(l).mu = HMMs(23).update(l).nom_mu ./ HMMs(23).update(l).denom;
+        HMMs(23).emission(l).sigma = sqrt(HMMs(23).update(l).nom_sigma ./ (HMMs(23).update(l).denom - 1));
+        HMMs(23).update(l).nom_mu = zeros(1,feature_dim);
+        HMMs(23).update(l).nom_sigma = zeros(1,feature_dim);
+        HMMs(23).update(l).denom = 0;       
+    end
+
+
+end
+
+
+
+
+
+
+
 
 end
 

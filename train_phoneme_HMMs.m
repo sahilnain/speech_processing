@@ -7,7 +7,7 @@ for fileIter = 1:length(featureDir)
     disp(fileIter)
 
     filename = featureDir(fileIter).name;
-    b = readNPY(append(featureDir(fileIter).folder,'/',featureDir(fileIter).name));
+    b =        featureDir(fileIter).data;
 
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
@@ -24,8 +24,9 @@ for fileIter = 1:length(featureDir)
     Composite_HMM = create_composite_HMM(HMMs,phon_sequence,phon2HMM_lookup,1);
 
     %Generate the gamma's
+    
     gamma_u = comp_forward_backward(Composite_HMM,b);
-
+    
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
     mu = (b'*exp(gamma_u));
