@@ -27,6 +27,7 @@ for i = 1:length(featureDir_train)
     data_train(i).data    = X;
 
 end
+
 data_test = struct('name', {}, 'X', {});
 for i = 1:length(featureDir_test)
     filename = featureDir_test(i).name;
@@ -37,15 +38,29 @@ for i = 1:length(featureDir_test)
 
 end
 
+numCoeffs = 13;
+dataItems = length(data_train);
+for i = 1:dataItems
+    % Converting Fbank to MFCC
+    mfcc = dct(fft(data_train(i).data, [], 2), [], 2);      % DCT along the feature dimension
+    mfcc = mfcc(:, 1:numCoeffs);
+    data_train(i).data = ifft(mfcc, [], 2);
+end
 
-
+dataItems = length(data_test);
+for i = 1:dataItems
+    % Converting Fbank to MFCC
+    mfcc = dct(fft(data_test(i).data, [], 2), [], 2);      % DCT along the feature dimension
+    mfcc = mfcc(:, 1:numCoeffs);
+    data_test(i).data = ifft(mfcc, [], 2);
+end
 
 
 %Initialise the HMM's for the digits, We assume each digit is modelled by an HMM with the
 %same amount of states
 N           = 7; %Number of states
 N_silence   = 3; %Number of states for silence
-feature_dim = 80;
+feature_dim = 13;
 
 for digit = 1:9
     
