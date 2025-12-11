@@ -48,7 +48,6 @@ for i = 1:length(featureDir_test)
 
     data_test(i).name = filename;
     data_test(i).data   = X;
-    disp(i)
 
 end
 
@@ -84,10 +83,10 @@ phon2HMM_lookup =   containers.Map({HMMs.tag}, num2cell(1:numel(HMMs)));
 %Next, we will go over all  utterances of a single digit in order to
 %improve the initialisation of these Phoneme HMM's
 
-%HMMs = improve_phoneme_initialisation(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+HMMs = improve_phoneme_initialisation(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
 
 %Start training the model for a number of iterations
-epochs = 1;
+epochs = 15;
 gamma = -75;
 
 for z = 1:epochs

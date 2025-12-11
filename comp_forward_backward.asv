@@ -10,7 +10,7 @@ N = size(HMM.stateMap,1); %Number of states
 
 %Initialise the matrices with the probabilities, we will work with log probabilities
 A_log = log(HMM.A);
-A_log_T = A_log';
+%A_log_T = A_log';
 alpha_log = zeros(T,N);
 beta_log  = zeros(T,N);
 

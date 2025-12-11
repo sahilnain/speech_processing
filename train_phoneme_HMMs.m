@@ -1,14 +1,15 @@
 function [HMMs] = train_phoneme_HMMs(featureDir,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup)
 
 
-for fileIter = 1:length(featureDir)
+for fileIter = 1:1000
     %Loop over the filenames, find the ones where the utterance is a single
     %digit
     disp(fileIter)
-
+    
     filename = featureDir(fileIter).name;
     b =        featureDir(fileIter).data;
-
+    
+   
     sequence = split(filename,{'a','b'});
     sequence = sequence{1};
     %Convert this digit sequence into a phoneme large phoneme sequence
@@ -17,7 +18,7 @@ for fileIter = 1:length(featureDir)
         phon_sequence = [phon_sequence ,digit2phon_lookup(v), {'r'}];
     end
     phon_sequence = [phon_sequence,digit2phon_lookup(sequence(end))];
-
+   
 
     
     %Create the composite model for this sequence of phonemes
