@@ -1,7 +1,7 @@
 function [HMMs] = train_phoneme_HMMs(featureDir,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup)
 
 
-for fileIter = 1:1000
+for fileIter = 1:length(featureDir)
     %Loop over the filenames, find the ones where the utterance is a single
     %digit
     disp(fileIter)

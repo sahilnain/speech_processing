@@ -43,7 +43,7 @@ end
 
 %Initialise the HMM's for the digits, We assume each digit is modelled by an HMM with the
 %same amount of states
-N           = 5; %Number of states
+N           = 7; %Number of states
 N_silence   = 3; %Number of states for silence
 feature_dim = 80;
 
