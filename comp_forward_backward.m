@@ -1,42 +1,47 @@
 function [gamma_log] = comp_forward_backward(HMM,data)
 
-%Compute the alpha's using the forward procedure
-%These represent the probability of observations up until time t, given we
-%are at a state i at that time index
-
 %The output will be an TxN matrix (time x total states)
-[T, D] = size(data); %Number of time frames x Dimension of one frame
+T = size(data,1); %Number of time frames
+D = size(data,2); %Dimension of one frame
 N = size(HMM.stateMap,1); %Number of states
 
-%Initialise the matrices with the probabilities, we will work with log probabilities
+%Initialise the matrices with the probabilities, we will work with log probabilities 
 A_log = log(HMM.A);
 A_log_T = A_log';
 alpha_log = zeros(T,N);
 beta_log  = zeros(T,N);
+gamma_log = zeros(T,N);
+b_log = zeros(T,N);      %We will calculate all b's for all time frames while iterating over the states
+                     %The j'th column corresponds to the b's of the j'th
+                     %state
+
+% Extract all mu and sigma into matrices
+% mu: [1 x D], so mu_all: [N x D]
+mu_all = vertcat(HMM.emission.mu);  % [N x D]
+sigma_all = vertcat(HMM.emission.sigma);  % [N x D]
+
+% Reshape for broadcasting
+% data: [T x D] -> [T x 1 x D]
+data_reshaped = reshape(data, [size(data, 1), 1, size(data, 2)]);  % [T x 1 x D]
+
+% mu_all: [N x D] -> [1 x N x D]
+mu_reshaped = reshape(mu_all, [1, size(mu_all, 1), size(mu_all, 2)]);  % [1 x N x D]
+
+% sigma_all: [N x D] -> [1 x N x D]
+sigma_reshaped = reshape(sigma_all, [1, size(sigma_all, 1), size(sigma_all, 2)]);  % [1 x N x D]
+
+% Vectorized computation using broadcasting
+diff = data_reshaped - mu_reshaped;  % [T x N x D]
+diff_squared = diff.^2;
+
+log_term = -0.5 * log(2 * pi * sigma_reshaped);
+ratio_term = -diff_squared ./ (2 * sigma_reshaped);
+
+% Sum across D dimension (dimension 3)
+b_log = sum(log_term + ratio_term, 3);  % [T x N]
 
 
-%Determine the b probabilities
-
-% Stack emission parameters into matrices: N × D
-mu    = vertcat(HMM.emission.mu);      % N × D
-sigma = vertcat(HMM.emission.sigma);   % N × D
-
-
-% Expand data (M × 1 × D), mu and sigma (1 × N × D)
-data_expanded  = reshape(data,  [T 1 D]);
-mu_expanded    = reshape(mu,    [1 N D]);
-sigma_expanded = reshape(sigma, [1 N D]);
-
-% Compute log Gaussian contributions for all states & all data
-result = -0.5 * log(2*pi*sigma_expanded) ...
-         - ( (data_expanded - mu_expanded).^2 ./ (2*sigma_expanded) );
-
-% Sum over dimensions to get final b_log (T × N)
-b_log = sum(result, 3);
-
-
-
-
+%Generate the alpha's for the other t's using recursion
 
 %generate alpha for the first time index
 alpha_log(1,:) = log(HMM.pi) + b_log(1,:);
@@ -76,8 +81,6 @@ for t = T-1:-1:1
     % Compute log-sum-exp
     beta_log(t,:) = (max_val + log(sum_exp))';
 end
-
-
 
 %Because we know our emission model only consists of one component, (so
 %no mixing), the gamma(i,j) = gamma(i)
