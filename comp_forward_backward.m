@@ -1,4 +1,4 @@
-function [gamma_log] = comp_forward_backward(HMM,data)
+function [gamma_log, loglik] = comp_forward_backward(HMM,data)
 
 %The output will be an TxN matrix (time x total states)
 T = size(data,1); %Number of time frames
@@ -95,4 +95,12 @@ denom_gamma = max_values_gamma + log(sum(exp_gamma,2));
 gamma_log = num_gamma - denom_gamma; 
 %Looking at the data, you wouldn't think they sum to one per t
 %but apparently the values are so small that they actually do sum to one
+
+% Utterance log-likelihood from forward messages:
+loglik = logsumexp(alpha_log(end,:));     % == log p(X | HMM)
+end
+
+function s = logsumexp(x)
+    m = max(x);
+    s = m + log(sum(exp(x - m)));
 end

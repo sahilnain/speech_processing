@@ -52,6 +52,37 @@ for i = 1:length(featureDir_test)
 
 end
 
+% uncomment when working with single delta of MFCC or just MFCC
+% numCoeffs = 13;
+% % set to 2*numCoeffs when working with delta for MFCC or
+% % set to numCoeffs when working with just MFCC
+% feature_dim = 26;
+% 
+% dataItems = length(data_train);
+% for i = 1:dataItems
+% %     % uncomment for working with MFCC features
+% %     % Converting Fbank to MFCC
+% %     mfcc = dct(data_train(i).data, [], 2);      % DCT along the feature dimension
+% %     mfcc = mfcc(:, 1:numCoeffs);
+% %     % Converting MFCC to single delta MFCC
+% %     Xpad = [mfcc(1,:); mfcc; mfcc(end,:)];
+% %     delta = (Xpad(3:end,:) - Xpad(1:end-2,:)) / 2;
+% %     Xsd   = [mfcc, delta];       % [T x (2D)]
+% %     data_train(i).data = Xsd;
+% end
+% 
+% dataItems = length(data_test);
+% for i = 1:dataItems
+% %     % uncomment for working with MFCC features
+% %     % Converting Fbank to MFCC
+% %     mfcc = dct(data_test(i).data, [], 2);      % DCT along the feature dimension
+% %     mfcc = mfcc(:, 1:numCoeffs);
+% %     % Converting MFCC to single delta MFCC
+% %     Xpad = [mfcc(1,:); mfcc; mfcc(end,:)];
+% %     delta = (Xpad(3:end,:) - Xpad(1:end-2,:)) / 2;
+% %     Xsd   = [mfcc, delta];       % [T x (2D)]
+% %     data_test(i).data = Xsd;
+% end
 
 %Create the phoneme HMMs. If we want an independant model for oh, we create
 %an extra HMM
@@ -87,20 +118,40 @@ phon2HMM_lookup =   containers.Map({HMMs.tag}, num2cell(1:numel(HMMs)));
 %HMMs = improve_phoneme_initialisation(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
 
 %Start training the model for a number of iterations
-epochs = 1;
+epochs = 10;
 gamma = -75;
-
 for z = 1:epochs
-%Train the models
-tic
-HMMs = train_phoneme_HMMs(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
-toc
-
-
+    %Train the models
+    tic
+    [HMMs, total_loglik] = train_phoneme_HMMs(data_train,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup);
+    toc
 end
 
-%WER = test_phoneme_HMM(data_test,HMMs,digit2phon_lookup,phon2HMM_lookup,gamma);
+WER = test_phoneme_HMM(data_test,HMMs,digit2phon_lookup,phon2HMM_lookup,gamma);
 
+% dataItems = length(data_train);
+% for i = 1:dataItems
+%     % Converting Fbank to MFCC
+%     mfcc = dct(data_train(i).data, [], 2);      % DCT along the feature dimension
+%     mfcc = mfcc(:, 1:numCoeffs);
+%     % One-line central difference (equivalent to N=1), with edge replication
+%     Xpad = [mfcc(1,:); mfcc; mfcc(end,:)];
+%     delta = (Xpad(3:end,:) - Xpad(1:end-2,:)) / 2;
+%     Xsd   = [mfcc, delta];       % [T x (2D)]
+%     data_train(i).data = Xsd;
+% end
+% 
+% dataItems = length(data_test);
+% for i = 1:dataItems
+%     % Converting Fbank to MFCC
+%     mfcc = dct(data_test(i).data, [], 2);      % DCT along the feature dimension
+%     mfcc = mfcc(:, 1:numCoeffs);
+%      % One-line central difference (equivalent to N=1), with edge replication
+%     Xpad = [mfcc(1,:); mfcc; mfcc(end,:)];
+%     delta = (Xpad(3:end,:) - Xpad(1:end-2,:)) / 2;
+%     Xsd   = [mfcc, delta];       % [T x (2D)]
+%     data_test(i).data = Xsd;
+% end
 
 
 

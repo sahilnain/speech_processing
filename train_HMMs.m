@@ -1,14 +1,16 @@
-function [HMMs] = train_HMMs(featureDir,HMMs,feature_dim)
+function [HMMs, total_loglik] = train_HMMs(featureDir,HMMs,feature_dim)
 
 %Create the lookup table
 tags = {HMMs.tag};
 indices = num2cell(1:numel(HMMs));  % Make cell array of indices
 lookup = containers.Map(tags, indices);
 
+total_loglik = 0;
+
 for fileIter = 1:length(featureDir)
     filename = featureDir(fileIter).name;
     b = featureDir(fileIter).data;
-    disp(fileIter)
+    % disp(fileIter)
     %Construct a state sequence by concatenating the different HMM's to
     %each other
     sequence = split(filename,{'a','b'});
@@ -17,9 +19,10 @@ for fileIter = 1:length(featureDir)
     Composite_HMM = create_composite_HMM(HMMs,sequence,lookup,0);
   
     %Generate the alpha's and beta's and gamma's
-    gamma_u = comp_forward_backward(Composite_HMM,b);
+    [gamma_u, loglik_u] = comp_forward_backward(Composite_HMM,b);
 
-    
+    total_loglik = total_loglik + loglik_u;
+
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
     mu = (b'*exp(gamma_u));

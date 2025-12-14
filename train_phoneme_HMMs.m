@@ -1,10 +1,10 @@
-function [HMMs] = train_phoneme_HMMs(featureDir,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup)
+function [HMMs, total_loglik] = train_phoneme_HMMs(featureDir,HMMs,feature_dim,digit2phon_lookup,phon2HMM_lookup)
 
-
+total_loglik = 0;
 for fileIter = 1:length(featureDir)
     %Loop over the filenames, find the ones where the utterance is a single
     %digit
-    disp(fileIter)
+    % disp(fileIter)
     
     filename = featureDir(fileIter).name;
     b =        featureDir(fileIter).data;
@@ -26,7 +26,8 @@ for fileIter = 1:length(featureDir)
 
     %Generate the gamma's
     
-    gamma_u = comp_forward_backward(Composite_HMM,b);
+    [gamma_u, loglik_u] = comp_forward_backward(Composite_HMM,b);
+    total_loglik = total_loglik + loglik_u;
     
     %Generate an update for mu and sigma
     denom = sum(exp(gamma_u),1);
